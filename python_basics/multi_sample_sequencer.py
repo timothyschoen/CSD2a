@@ -24,7 +24,7 @@ We will trigger events based on their eventtime.
   - Remove the [#] at the of the line, what will happen now?
     Check your answer by running the script.
 
-    Nu werkt hij
+    Nu slaat hij geen noten meer over, wat hij eerst wel deed
 
 - Add comments:
   A few comments are missing in this script.
@@ -62,7 +62,7 @@ events = []
 # create lists with the moments (in 16th) at which we should play the samples
 sequence1 = [0, 2, 4, 8, 11]
 sequence2 = [3, 6, 10]
-sequence3 = [9, 13]
+sequence3 = [5, 9]
 
 # transform the sixteenthNoteSequece to an eventlist with time values
 # After each event in the list, a number (0, 1 or 2) will be appended to indicate which sample must be played
@@ -78,7 +78,7 @@ def playsequence(n):
     # NOTE: The line below is essential to enable a correct playback of the events
     events.sort()
     # display the event list
-    print(events)
+    #print(events)
     # retrieve first event
     # NOTE: pop(0) returns and removes the element at index 0
     event = events.pop(0)
@@ -87,29 +87,35 @@ def playsequence(n):
     keepPlaying = True
     # play the sequence
     while keepPlaying:
-    # retrieve current time
-        currentTime = time.time()
-        # check if the event's time (which is at index 0 of event) is passed
-        if(currentTime - startTime >= event[0]):
-            # play sample -> sample index is at index 1
-            samples[event[1]].play()
-            # if there are events left in the events list
-            if events:
-                # retrieve the next event
-                event = events.pop(0)
-            else:
-                # list is empty, stop loop
-
-                if n == 0:
-                    keepPlaying = False
-                    return()
-                else:
-                    if(currentTime - startTime >= measureDuration):
-                        keepPlaying = False
-                        playsequence(n - 1)
-                    else:
-                        time.sleep(0.001)
-
+      # retrieve current time
+      currentTime = time.time()
+      # check if the event's time (which is at index 0 of event) is passed
+      if(currentTime - startTime >= event[0]):
+        # play sample -> sample index is at index 1
+        samples[event[1]].play()
+        # if there are events left in the events list
+        if events:
+          # retrieve the next event
+          event = events.pop(0)
         else:
+          # list is empty, stop loop
+          keepPlaying = False
+      else:
         # wait for a very short moment
+        time.sleep(0.001)
+    gottaRepeat = True
+    # repeat it n times
+    while gottaRepeat:
+        currentTime = time.time()
+        # check if the measure is over
+        if(currentTime - startTime >= measureDuration):
+            gottaRepeat = False
+            # check if we've reached n
+            if n > 1:
+                # if we havent, play again
+                playsequence(n - 1)
+            else:
+                # else stop the program
+                return()
+        else:
             time.sleep(0.001)
