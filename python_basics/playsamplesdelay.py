@@ -11,5 +11,5 @@ def playsample(bpm, *args):
         # Sleep time, converted from note to time
         time.sleep (float (arg) * (60 / bpm))
 
-
-playsample(135, 1, 1, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1, 1, 1, 1)
+# Driver code:
+# playsample(135, 1, 1, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1, 1, 1, 1)
