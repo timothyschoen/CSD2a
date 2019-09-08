@@ -1,0 +1,7 @@
+# Python markov input tool
+import rtmidi
+import numpy as np
+
+order = 3
+chain = np.zeros(([order, 12, 12]))
+print(chain)
