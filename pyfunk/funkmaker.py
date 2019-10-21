@@ -84,7 +84,8 @@ def welcome():
         hookthread.start()
         # Variable to calculate progress
         lastlen = 0
-        with tqdm(total=12, desc='Getting progessions from HookTheory', bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}') as pbar:
+        # Progress bar with TQDM library
+        with tqdm(total=16, desc='Getting progessions from HookTheory', bar_format='{l_bar}{bar}|{n_fmt}/{total_fmt}') as pbar:
             while len(progressions) < 4:
                 if lastlen != progbar:
                     pbar.update(progbar - lastlen)
@@ -223,14 +224,13 @@ def compose():
         print("\x1b[8;24;80t")
         print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
         print(" ______________________________________________________________________________\n")
-        print('Key: ', ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C'][int(key%12)])
-        print('Tempo:', bpm, "bpm")
-        print('Time Signature:', ['4/4', '5/4', '7/8'][timesigchoice] )
+        print(' Key: ', ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C'][int(key%12)])
+        print(' Tempo:', bpm, "bpm")
+        print(' Time Signature:', ['4/4', '5/4', '7/8'][timesigchoice] )
         print(" ______________________________________________________________________________\n")
         print('\n\n\n\n\n\n\n\n\n\n\n\n')
         print(" ______________________________________________________________________________\n")
         print("s = Save    n = New Sequence    p=Pause/Play   m=Toggle modulations   q = Quit")
-        print('>')
     # Place fills
     elif barCount % repeats == repeats-1:
         mode = 0
@@ -309,7 +309,6 @@ def compose():
         else:
             change = 0
         try:
-            #
             rootnotes = spreadNotes([parts[4][i][0]])
             fullchord = spreadNotes(parts[4][i])
         except TypeError as e:
@@ -446,8 +445,6 @@ def compose():
                 # switch between higher and lower voicings
                     parts[3][i] = [(voicing[y]%12)+60 for y in range(len(voicing))]
                     parts[3][i].append((parts[3][i][0]%12)+48)
-#            else:
-#                parts[3][i] = []
     # Generate velocity list
     velocity = [random.randint(80, ((1-x%2)*20)+97) for i in range(length)]
     # set some maximum lengths, there is no reason why a kick should be sustained, looks odd on a piano roll too
@@ -459,7 +456,7 @@ def compose():
     # These will later be used for live midi playback or midi file output
     # In these lines we also apply the swing feel, velocity and semi-random duration of each note
     # Sorry for the long list comprehension, but I feel like it's not that hard to decipher if you know what each part is, and it is also the most efficient method in python (that's important because composer runs between bar changes)
-    voices = [[[i+((i%2)*swing), x, velocity[i]+random.randint(-5, 5), random.randint(((duration[y][i]-2)+(1-i%2))+1, duration[y][i]+1+(1-i%2))] for i, x in enumerate(parts[y])] for y in range(len(parts))]
+    voices = [[[i+((i%2)*swing), x, velocity[i]+random.randint(-5, 5), random.randint(((duration[y][i]-1)+(1-i%2))+1, duration[y][i]+1+(1-i%2))] for i, x in enumerate(parts[y])] for y in range(len(parts))]
     # remember our output to we can export longer midi files
     history.append(voices)
 
@@ -501,7 +498,6 @@ def playseq():
             # function that allows us to magically stop time
             pausesleep((events[0][0] - (currentTime - startTime))/2000)
     # compose here so we have a little bit more time before we need to start again
-    compose()
     while endplay == False:
         currentTime = time.time()
         # check if the measure is over
@@ -509,6 +505,7 @@ def playseq():
             # End midi note-offs that cross our barline
             flush()
             # Do it again!
+            compose()
             playseq()
         else:
             pausesleep((measureDuration - (currentTime - startTime))/2000)
@@ -542,13 +539,12 @@ def makenote(notes, i, type, velocity):
 def savemidi():
     global length
     print('How many bars would you like to save?')
-    hist = custom_input('int', 1, 50)
+    hist = custom_input('int', 1, 16)
     # create a list that is as long as the user wanted
-    if hist > len(history):
+    while hist+2 > len(history):
         # Create new parts if they requested more bars than we had ready
-        for i in range((hist - len(history))+1):
-            compose()
-            print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
+        compose()
+    print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
     # select the right part of our history and flip it
     histlist = history[int(hist*-1):][::-1]
     # I get errors if I deinterleave, but this works
@@ -566,22 +562,20 @@ def savemidi():
                 if isinstance(histlist[y][i][x][1], int):
                     histlist[y][i][x][1] = [histlist[y][i][x][1]]
                 for pitch in histlist[y][i][x][1]:
-                    if pitch != 0:
+                    if pitch != 0 and isinstance(pitch, int):
                         volume = histlist[y][i][x][2]
                         time = (histlist[y][i][x][0]+(y*length))/4  #convert from beats to sixteenths
-                        duration = abs(histlist[y][i][x][3])/4  # This doesn't seem to work somehow???
+                        duration = abs((((histlist[y][i][x][3]/4)-0.25)*(i!=2)) + 0.25)  # This doesn't seem to work somehow???
                         # add the note!!
-                        mf.addNote(i, channel, pitch, time, duration, volume)
+                        mf.addNote(int(i), int(channel), pitch, float(time), float(duration), int(volume))
     filename = (input('Save As:') +  ".mid")
-    with open(filename, 'wb') as outf:
-        # Appearantly MIDIUtil is still pretty glitchy on python3
-        # The fact that we give users the choice to export massive amounts of MIDI makes it a lot more likely for these errors to show up
-        # Usually it still succesfully exports if we just except the error so whatever
-        try:
+    try:
+        with open(filename, 'wb') as outf:
+            # MIDIUtil is still pretty glitchy on python3
+            # The fact that we give users the choice to export massive amounts of MIDI makes it a lot more likely for these errors to show up
             mf.writeFile(outf)
-        except:
-            print('An Error has occured when exporting MIDI')
-
+    except:
+        print('error printing midi file')
 # Custom input function so I can easily check if the input is correction
 # Range can contain an array of possible input values, or a min and max value
 def custom_input(type, *range):
@@ -627,18 +621,19 @@ def playmenu():
             pause = 0
             playmenu()
         elif choice == 'q': # quit to main menu
-            events = []
             endplay = 1
+            events = []
             flush()
             menu()
         elif choice == 'n': # create a new sequence with custom settings
-            events = []
             endplay = 1
-            barCount = 0
             flush()
             composerSetup()
-            endplay = 0
+            events = []
+            barCount = 0
             partmode = 1
+            compose()
+            endplay = 0
             playthread = threading.Thread(target=playseq)
             playthread.daemon = True
             playthread.start()
