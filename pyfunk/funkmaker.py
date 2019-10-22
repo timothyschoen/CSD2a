@@ -118,7 +118,7 @@ def menu():
         bpm = random.randint(95, 120)
         key = random.randint(0, 11)
         swing = random.randint(15, 30)/bpm
-        timesigchoice = 0
+        timesigchoice = random.randint(0,2)
         composerSetup(bpm, key, swing, timesigchoice)
     elif choice == 2:
         partmode = 1
@@ -184,15 +184,15 @@ def composerSetup(*args):
         repeats = 4
         countlist = [i for i in range(length)]
     elif timesigchoice == 1:
-        beatsPerMeasure = 2.5
-        repeats = 12
-        countlist = [0, 1, 2, 1, 0, 1, 4, 1, 2, 1, 2, 1, 0, 1, 4, 1]
-        length = 10
+        beatsPerMeasure = 5
+        repeats = 4
+        countlist = [0,1,2,3,4,5,6,7,8,9,10,11,0,1,2,3,0,1,2,3]
+        length = 20
     elif timesigchoice == 2:
         beatsPerMeasure = 3.5
         repeats = 8
         length = 14
-        countlist = [i for i in range(length)]
+        countlist = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,0,1,2,3,4,5,6,7,8,9,10,11,12,13]
     else:
         print("selected 4/4")
         length = 32
@@ -396,7 +396,7 @@ def compose():
         # DRUMS
         # kick
         # Kicks are decided by the rhythmlist
-        if rhythmlist[i][2] == 1:
+        if rhythmlist[i][2] == 1 or x % 8 == 0:
             if x % 8 == 0 and random.randint(0, 3) != 0 or x%16 == 0 or random.randint(0, (1-(x%2))+5) == 0 or parts[0][i] != 0 and random.randint(0, 2) == 0:
                 parts[2][i][0] = 36
             else:
@@ -432,7 +432,11 @@ def compose():
         if mode != 0 or random.randint(0, 2) == 0 and i != length:
             if rhythmlist[i][3] == 1:
                 # arrange function makes nice quasi-counterpoint voicing
-                voicing = arrange(parts[4][i], lastparts[3][1][0:3], scale)
+                try:
+                    voicing = arrange(parts[4][i], lastparts[3][1][0:3], scale)
+                except:
+                    ('Error making new voicing')
+                    voicing = parts[4][i]
                 if random.randrange(0, 2) == 0:
                     parts[3][i] = voicing
                     # add a lower note
@@ -538,6 +542,9 @@ def makenote(notes, i, type, velocity):
 
 def savemidi():
     global length
+    quarterNoteDuration = 60 / bpm
+    sixteenthNoteDuration =  quarterNoteDuration / 4.0
+    measureDuration = beatsPerMeasure  * quarterNoteDuration
     print('How many bars would you like to save?')
     hist = custom_input('int', 1, 16)
     # create a list that is as long as the user wanted
@@ -686,6 +693,8 @@ def movement(lastnote, scale, distance):
 # Also adds some extentions
 def arrange(chord, lastchord, scale):
     # First, sort them
+    if isinstance(chord, list) != 1:
+        chord = [chord]
     chord.sort()
     lastchord.sort()
     # Get the the outer interval and prevent parallel fifths
